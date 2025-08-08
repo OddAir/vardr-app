@@ -46,7 +46,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
    res.writeHead(200, { 'Content-Type': 'text/plain' });
    res.end(
-     `Hello from the Observable VARDR-API!\n\n` +
+     `Hello from odd from the Observable VARDR-API!\n\n` +
      `DATABASE_CONFIG:\n` +
      `PostgreSQL Host: ${PG_HOST}\n` +
      `InfluxDB URL: ${INFLUX_URL}\n`
