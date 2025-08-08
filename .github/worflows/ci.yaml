@@ -1,0 +1,53 @@
+name: VARDR Application CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-and-push:
+    name: Build, Push and Update Manifest
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Application Repository
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Tag Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} .
+
+      - name: Push Docker Image to GHCR
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Checkout Manifest Repository
+        uses: actions/checkout@v4
+        with:
+          repository: OddAir/vardr-manifests
+          token: ${{ secrets.MANIFEST_REPO_PAT }}
+          path: vardr-manifests
+
+      - name: Update Helm Chart Values
+        run: |
+          yq -i '.image.tag = "${{ github.sha }}"' vardr-manifests/vardr-app/values.yaml
+
+      - name: Commit and Push Manifest Changes
+        run: |
+          cd vardr-manifests
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions-bot@github.com"
+          git add .
+          git commit -m "Update image for vardr-app to commit ${{ github.sha }} [skip ci]"
+          git push
